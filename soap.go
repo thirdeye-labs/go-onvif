@@ -88,7 +88,7 @@ func (soap SOAP) createRequest() string {
 
 	// Set request header
 	if soap.User != "" {
-		request += "<s:header>" + soap.createUserToken() + "</s:header>"
+		request += "<s:Header>" + soap.createUserToken() + "</s:Header>"
 	}
 
 	// Set request body
