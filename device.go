@@ -13,8 +13,10 @@ var deviceXMLNs = []string{
 func (device Device) GetInformation() (DeviceInformation, error) {
 	// Create SOAP
 	soap := SOAP{
-		Body:  "<tds:GetDeviceInformation/>",
-		XMLNs: deviceXMLNs,
+		Body:     "<tds:GetDeviceInformation/>",
+		XMLNs:    deviceXMLNs,
+		User:     device.User,
+		Password: device.Password,
 	}
 
 	// Send SOAP request
@@ -50,6 +52,8 @@ func (device Device) GetCapabilities() (DeviceCapabilities, error) {
 		Body: `<tds:GetCapabilities>
 			<tds:Category>All</tds:Category>
 		</tds:GetCapabilities>`,
+		User:     device.User,
+		Password: device.Password,
 	}
 
 	// Send SOAP request
@@ -119,8 +123,10 @@ func (device Device) GetCapabilities() (DeviceCapabilities, error) {
 func (device Device) GetDiscoveryMode() (string, error) {
 	// Create SOAP
 	soap := SOAP{
-		Body:  "<tds:GetDiscoveryMode/>",
-		XMLNs: deviceXMLNs,
+		Body:     "<tds:GetDiscoveryMode/>",
+		XMLNs:    deviceXMLNs,
+		User:     device.User,
+		Password: device.Password,
 	}
 
 	// Send SOAP request
@@ -138,8 +144,10 @@ func (device Device) GetDiscoveryMode() (string, error) {
 func (device Device) GetScopes() ([]string, error) {
 	// Create SOAP
 	soap := SOAP{
-		Body:  "<tds:GetScopes/>",
-		XMLNs: deviceXMLNs,
+		Body:     "<tds:GetScopes/>",
+		XMLNs:    deviceXMLNs,
+		User:     device.User,
+		Password: device.Password,
 	}
 
 	// Send SOAP request
@@ -170,8 +178,10 @@ func (device Device) GetScopes() ([]string, error) {
 func (device Device) GetHostname() (HostnameInformation, error) {
 	// Create SOAP
 	soap := SOAP{
-		Body:  "<tds:GetHostname/>",
-		XMLNs: deviceXMLNs,
+		Body:     "<tds:GetHostname/>",
+		XMLNs:    deviceXMLNs,
+		User:     device.User,
+		Password: device.Password,
 	}
 
 	// Send SOAP request
