@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/clbanning/mxj"
-	"github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 )
 
 var errWrongDiscoveryResponse = errors.New("Response is not related to discovery request")
@@ -48,8 +48,8 @@ func StartDiscovery(duration time.Duration) ([]Device, error) {
 
 func discoverDevices(ipAddr string, duration time.Duration) ([]Device, error) {
 	// Create WS-Discovery request
-	requestID := "uuid:" + uuid.NewV4().String()
-	request := `		
+	requestID := "uuid:" + uuid.Must(uuid.NewV4()).String()
+	request := `
 		<?xml version="1.0" encoding="UTF-8"?>
 		<e:Envelope
 		    xmlns:e="http://www.w3.org/2003/05/soap-envelope"
