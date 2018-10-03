@@ -1,6 +1,7 @@
 package onvif
 
 import (
+	"encoding/json"
 	"strings"
 )
 
@@ -204,4 +205,35 @@ func (device Device) GetHostname() (HostnameInformation, error) {
 	}
 
 	return hostnameInfo, nil
+}
+
+// GetHostname fetch hostname of an ONVIF camera
+func (device Device) GetNetworkInterfaces() (NetworkInterfaces, error) {
+	// Create SOAP
+	soap := SOAP{
+		Body:     "<tds:GetNetworkInterfaces/>",
+		XMLNs:    deviceXMLNs,
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	// Send SOAP request
+	response, err := soap.SendRequest(device.XAddr)
+	if err != nil {
+		return NetworkInterfaces{}, err
+	}
+
+	// Parse response to interface
+	networkInfo, err := response.ValueForPath("Envelope.Body.GetNetworkInterfacesResponse.NetworkInterfaces")
+	if err != nil {
+		return NetworkInterfaces{}, err
+	}
+
+	networkInfoAsJSON, _ := json.MarshalIndent(networkInfo, "", "  ")
+	var ni NetworkInterfaces
+	if err = json.Unmarshal(networkInfoAsJSON, &ni); err != nil {
+		return NetworkInterfaces{}, err
+	}
+
+	return ni, nil
 }

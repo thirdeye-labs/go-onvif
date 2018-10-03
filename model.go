@@ -106,3 +106,29 @@ type MediaURI struct {
 	InvalidAfterConnect bool
 	InvalidAfterReboot  bool
 }
+
+type NetworkInterfaces struct {
+	Enabled string
+	IPv4    IPv4
+	// IPv6    IPv6
+	Info NetworkInfo
+}
+
+type IPv4 struct {
+	Enabled    string
+	IPv4Config IPv4Config `json:"Config"`
+}
+
+type IPv4Config struct {
+	DHCP     string
+	FromDHCP FromDHCP `json:"FromDHCP"`
+}
+
+type FromDHCP struct {
+	Address      string
+	PrefixLength string
+}
+
+type NetworkInfo struct {
+	HwAddress string
+}
