@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/clbanning/mxj"
@@ -49,6 +50,7 @@ func (soap SOAP) SendRequest(xaddr string) (mxj.Map, error) {
 
 	// Send request
 	resp, err := httpClient.Do(req)
+
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +66,18 @@ func (soap SOAP) SendRequest(xaddr string) (mxj.Map, error) {
 	mapXML, err := mxj.NewMapXml(responseBody)
 	if err != nil {
 		return nil, err
+	}
+
+	subCodeValue, _ := mapXML.ValueForPathString("Envelope.Body.Fault.Code.Subcode.Value")
+	if subCodeValue != "" {
+		faultDetail, _ := mapXML.ValueForPathString("Envelope.Body.Fault.Detail.Text")
+
+		switch strings.TrimPrefix(subCodeValue, "ter:") {
+		case "OperationProhibited":
+			return nil, NewErrOperationProhibited(faultDetail)
+		default:
+			return nil, NewUnsupportedError(subCodeValue, faultDetail)
+		}
 	}
 
 	// Check if SOAP returns fault
