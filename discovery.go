@@ -1,6 +1,7 @@
 package onvif
 
 import (
+	"context"
 	"errors"
 	"net"
 	"regexp"
@@ -21,6 +22,13 @@ func StartDiscovery(duration time.Duration) ([]Device, error) {
 		return []Device{}, err
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), duration)
+	defer cancel()
+
+	return StartDiscoveryWithContext(ctx, addrs, duration)
+}
+
+func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration time.Duration) ([]Device, error) {
 	// Fetch IPv4 address
 	ipAddrs := []string{}
 	for _, addr := range addrs {
