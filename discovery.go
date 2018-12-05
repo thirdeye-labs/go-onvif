@@ -43,18 +43,26 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 
 	// Discover device on each interface's network
 	for _, ipAddr := range ipAddrs {
-		devices, err := discoverDevices(ipAddr, duration)
+		devices, err := discoverDevices(1, ipAddr, duration)
 		if err != nil {
 			return []Device{}, err
 		}
 
 		discoveryResults = append(discoveryResults, devices...)
+
+		devices, err = discoverDevices(2, ipAddr, duration)
+		if err != nil {
+			return []Device{}, err
+		}
+
+		discoveryResults = append(discoveryResults, devices...)
+		// fmt.Println(discoveryResults)
 	}
 
 	return discoveryResults, nil
 }
 
-func discoverDevices(ipAddr string, duration time.Duration) ([]Device, error) {
+func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Device, error) {
 	// Create WS-Discovery request
 	requestID := "uuid:" + uuid.Must(uuid.NewV4()).String()
 	request := `
@@ -77,15 +85,38 @@ func discoverDevices(ipAddr string, duration time.Duration) ([]Device, error) {
 		    </e:Body>
 		</e:Envelope>`
 
+	var requestV1 = `
+		<Envelope xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:i="http://printer.example.org/2003/imaging" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+		<Header>
+			<Action>
+				http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe
+			</Action>
+			<MessageID>
+				` + requestID + `
+			</MessageID>
+			<To>
+				urn:schemas-xmlsoap-org:ws:2005:04:discovery
+			</To>
+		</Header>
+		<Body>
+		</Body>
+		</Envelope>
+	`
+
+	if version == 1 {
+		request = requestV1
+	}
+
 	// Clean WS-Discovery message
 	request = regexp.MustCompile(`\>\s+\<`).ReplaceAllString(request, "><")
 	request = regexp.MustCompile(`\s+`).ReplaceAllString(request, " ")
-
 	// Create UDP address for local and multicast address
 	localAddress, err := net.ResolveUDPAddr("udp4", ipAddr+":0")
 	if err != nil {
 		return []Device{}, err
 	}
+
+	// fmt.Println("ip", ipAddr, duration, localAddress)
 
 	multicastAddress, err := net.ResolveUDPAddr("udp4", "239.255.255.250:3702")
 	if err != nil {
@@ -128,6 +159,8 @@ func discoverDevices(ipAddr string, duration time.Duration) ([]Device, error) {
 				return discoveryResults, err
 			}
 		}
+
+		// fmt.Println(version, string(buffer))
 
 		// Read and parse WS-Discovery response
 		device, err := readDiscoveryResponse(requestID, buffer)
