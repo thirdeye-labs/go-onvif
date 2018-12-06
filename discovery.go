@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/clbanning/mxj"
 	"github.com/gofrs/uuid"
 )
@@ -43,26 +44,21 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 
 	// Discover device on each interface's network
 	for _, ipAddr := range ipAddrs {
-		devices, err := discoverDevices(1, ipAddr, duration)
-		if err != nil {
-			return []Device{}, err
+		for i := 1; i <= 2; i++ {
+			devices, err := discoverDevices(uint(i), ipAddr, duration)
+			if err != nil {
+				return []Device{}, err
+			}
+
+			discoveryResults = append(discoveryResults, devices...)
 		}
-
-		discoveryResults = append(discoveryResults, devices...)
-
-		devices, err = discoverDevices(2, ipAddr, duration)
-		if err != nil {
-			return []Device{}, err
-		}
-
-		discoveryResults = append(discoveryResults, devices...)
-		// fmt.Println(discoveryResults)
 	}
 
 	return discoveryResults, nil
 }
 
 func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Device, error) {
+	var now = time.Now()
 	// Create WS-Discovery request
 	requestID := "uuid:" + uuid.Must(uuid.NewV4()).String()
 	request := `
@@ -131,7 +127,7 @@ func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Dev
 	defer conn.Close()
 
 	// Set connection's timeout
-	err = conn.SetDeadline(time.Now().Add(duration))
+	err = conn.SetDeadline(now.Add(duration))
 	if err != nil {
 		return []Device{}, err
 	}
@@ -148,7 +144,7 @@ func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Dev
 	// Keep reading UDP message until timeout
 	for {
 		// Create buffer and receive UDP response
-		buffer := make([]byte, 10*1024)
+		buffer := make([]byte, 16*1024)
 		_, _, err = conn.ReadFromUDP(buffer)
 
 		// Check if connection timeout
@@ -160,13 +156,15 @@ func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Dev
 			}
 		}
 
-		// fmt.Println(version, string(buffer))
+		log.Debugf("Camera replied. Version: %s. Data: %s", version, string(buffer))
 
 		// Read and parse WS-Discovery response
 		device, err := readDiscoveryResponse(requestID, buffer)
 		if err != nil && err != errWrongDiscoveryResponse {
 			return discoveryResults, err
 		}
+
+		// fmt.Println(now, device, err)
 
 		// Push device to results
 		discoveryResults = append(discoveryResults, device)
