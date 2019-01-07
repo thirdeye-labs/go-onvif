@@ -207,7 +207,7 @@ func (device Device) GetHostname() (HostnameInformation, error) {
 	return hostnameInfo, nil
 }
 
-// GetHostname fetch hostname of an ONVIF camera
+// GetNetworkInterfaces fetches the Network Interfaces of an ONVIF camera
 func (device Device) GetNetworkInterfaces() (NetworkInterfaces, error) {
 	// Create SOAP
 	soap := SOAP{
