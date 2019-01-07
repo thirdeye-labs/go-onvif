@@ -58,6 +58,7 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 }
 
 func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Device, error) {
+	log.Debugf("discoverDevices. Version: %d. IP: %s. Duration: %s", version, ipAddr, duration)
 	var now = time.Now()
 	// Create WS-Discovery request
 	requestID := "uuid:" + uuid.Must(uuid.NewV4()).String()
@@ -156,7 +157,7 @@ func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Dev
 			}
 		}
 
-		log.Debugf("Camera replied. Version: %s. Data: %s", version, string(buffer))
+		log.Debugf("Camera replied. Version: %d. Data: %s", version, string(buffer))
 
 		// Read and parse WS-Discovery response
 		device, err := readDiscoveryResponse(requestID, buffer)

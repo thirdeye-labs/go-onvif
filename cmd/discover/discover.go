@@ -7,10 +7,14 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/apex/log"
 	onvif "github.com/byronwilliams/go-onvif"
 )
 
 func main() {
+	log.SetLevelFromString("debug")
+	log.Debug("Starting")
+
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		panic(err)
@@ -19,7 +23,7 @@ func main() {
 	var addrs []net.Addr
 
 	for _, iface := range ifaces {
-		if iface.Name == "wlp58s0" || iface.Name == "wlan1" {
+		if iface.Name == "wlp58s0" || iface.Name == "wlan0" || iface.Name == "wlan1" {
 			ifaceAddrs, err := iface.Addrs()
 
 			if err != nil {
@@ -41,7 +45,7 @@ func main() {
 		time.Sleep(1 * time.Second)
 
 		fmt.Println("Discovering...")
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*35)
 		defer cancel()
 		d, err := onvif.StartDiscoveryWithContext(ctx, addrs, time.Second*30)
 		if err != nil {
