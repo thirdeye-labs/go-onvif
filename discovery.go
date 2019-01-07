@@ -1,12 +1,14 @@
 package onvif
 
 import (
+	"context"
 	"errors"
 	"net"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/clbanning/mxj"
 	"github.com/gofrs/uuid"
 )
@@ -21,6 +23,13 @@ func StartDiscovery(duration time.Duration) ([]Device, error) {
 		return []Device{}, err
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), duration)
+	defer cancel()
+
+	return StartDiscoveryWithContext(ctx, addrs, duration)
+}
+
+func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration time.Duration) ([]Device, error) {
 	// Fetch IPv4 address
 	ipAddrs := []string{}
 	for _, addr := range addrs {
@@ -35,18 +44,22 @@ func StartDiscovery(duration time.Duration) ([]Device, error) {
 
 	// Discover device on each interface's network
 	for _, ipAddr := range ipAddrs {
-		devices, err := discoverDevices(ipAddr, duration)
-		if err != nil {
-			return []Device{}, err
-		}
+		for i := 1; i <= 2; i++ {
+			devices, err := discoverDevices(uint(i), ipAddr, duration)
+			if err != nil {
+				return []Device{}, err
+			}
 
-		discoveryResults = append(discoveryResults, devices...)
+			discoveryResults = append(discoveryResults, devices...)
+		}
 	}
 
 	return discoveryResults, nil
 }
 
-func discoverDevices(ipAddr string, duration time.Duration) ([]Device, error) {
+func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Device, error) {
+	log.Debugf("discoverDevices. Version: %d. IP: %s. Duration: %s", version, ipAddr, duration)
+	var now = time.Now()
 	// Create WS-Discovery request
 	requestID := "uuid:" + uuid.Must(uuid.NewV4()).String()
 	request := `
@@ -69,15 +82,38 @@ func discoverDevices(ipAddr string, duration time.Duration) ([]Device, error) {
 		    </e:Body>
 		</e:Envelope>`
 
+	var requestV1 = `
+		<Envelope xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:i="http://printer.example.org/2003/imaging" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+		<Header>
+			<Action>
+				http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe
+			</Action>
+			<MessageID>
+				` + requestID + `
+			</MessageID>
+			<To>
+				urn:schemas-xmlsoap-org:ws:2005:04:discovery
+			</To>
+		</Header>
+		<Body>
+		</Body>
+		</Envelope>
+	`
+
+	if version == 1 {
+		request = requestV1
+	}
+
 	// Clean WS-Discovery message
 	request = regexp.MustCompile(`\>\s+\<`).ReplaceAllString(request, "><")
 	request = regexp.MustCompile(`\s+`).ReplaceAllString(request, " ")
-
 	// Create UDP address for local and multicast address
 	localAddress, err := net.ResolveUDPAddr("udp4", ipAddr+":0")
 	if err != nil {
 		return []Device{}, err
 	}
+
+	// fmt.Println("ip", ipAddr, duration, localAddress)
 
 	multicastAddress, err := net.ResolveUDPAddr("udp4", "239.255.255.250:3702")
 	if err != nil {
@@ -92,7 +128,7 @@ func discoverDevices(ipAddr string, duration time.Duration) ([]Device, error) {
 	defer conn.Close()
 
 	// Set connection's timeout
-	err = conn.SetDeadline(time.Now().Add(duration))
+	err = conn.SetDeadline(now.Add(duration))
 	if err != nil {
 		return []Device{}, err
 	}
@@ -109,7 +145,7 @@ func discoverDevices(ipAddr string, duration time.Duration) ([]Device, error) {
 	// Keep reading UDP message until timeout
 	for {
 		// Create buffer and receive UDP response
-		buffer := make([]byte, 10*1024)
+		buffer := make([]byte, 16*1024)
 		_, _, err = conn.ReadFromUDP(buffer)
 
 		// Check if connection timeout
@@ -121,11 +157,15 @@ func discoverDevices(ipAddr string, duration time.Duration) ([]Device, error) {
 			}
 		}
 
+		log.Debugf("Camera replied. Version: %d. Data: %s", version, string(buffer))
+
 		// Read and parse WS-Discovery response
 		device, err := readDiscoveryResponse(requestID, buffer)
 		if err != nil && err != errWrongDiscoveryResponse {
 			return discoveryResults, err
 		}
+
+		// fmt.Println(now, device, err)
 
 		// Push device to results
 		discoveryResults = append(discoveryResults, device)
