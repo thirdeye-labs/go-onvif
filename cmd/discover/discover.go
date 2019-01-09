@@ -45,9 +45,9 @@ func main() {
 		time.Sleep(1 * time.Second)
 
 		fmt.Println("Discovering...")
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*35)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 		defer cancel()
-		d, err := onvif.StartDiscoveryWithContext(ctx, addrs, time.Second*30)
+		d, err := onvif.StartDiscoveryWithContext(ctx, addrs, time.Second*15)
 		if err != nil {
 			panic(err)
 		}
@@ -61,14 +61,18 @@ func main() {
 		}
 
 		for i := 0; i < found; i++ {
-			fmt.Println(d[i].XAddr)
-			nps, _ := d[i].GetNetworkProtocols()
+			fmt.Println("XAddr", d[i].XAddr)
+			nps, err := d[i].GetNetworkProtocols()
 
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println("XAddr", d[i].XAddr)
 			parsed, _ := url.Parse(d[i].XAddr)
 			host, _, _ := net.SplitHostPort(parsed.Host)
 
 			for _, np := range nps {
-				fmt.Println(net.JoinHostPort(host, fmt.Sprintf("%d", np.Port)))
+				fmt.Println("Joined", net.JoinHostPort(host, fmt.Sprintf("%d", np.Port)))
 			}
 
 			profiles, _ := d[i].GetProfiles()

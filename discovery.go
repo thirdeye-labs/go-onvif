@@ -2,7 +2,9 @@ package onvif
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -31,34 +33,31 @@ func StartDiscovery(duration time.Duration) ([]Device, error) {
 }
 
 func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration time.Duration) ([]Device, error) {
-	// Fetch IPv4 address
-	ipAddrs := []string{}
-	for _, addr := range addrs {
-		ipAddr, ok := addr.(*net.IPNet)
-		if ok && !ipAddr.IP.IsLoopback() && ipAddr.IP.To4() != nil {
-			ipAddrs = append(ipAddrs, ipAddr.IP.String())
-		}
-	}
+	eg, ctx := errgroup.WithContext(ctx)
 
 	// Create initial discovery results
 	discoveryResults := []Device{}
 
-	eg, ctx := errgroup.WithContext(ctx)
+	// Fetch IPv4 address
+	for _, addr := range addrs {
+		ipAddr, ok := addr.(*net.IPNet)
+		if ok && !ipAddr.IP.IsLoopback() && ipAddr.IP.To4() != nil {
+			// ipAddrs = append(ipAddrs, ipAddr.IP.String())
 
-	// Discover device on each interface's network
-	for _, ipAddr := range ipAddrs {
-		for i := 1; i <= 2; i++ {
-			i, ipAddr := i, ipAddr
-			eg.Go(func() error {
-				devices, err := discoverDevices(uint(i), ipAddr, duration)
-				if err != nil {
-					return err
-				}
+			for i := 1; i <= 2; i++ {
+				i, ipAddr := i, ipAddr
+				eg.Go(func() error {
+					devices, err := discoverDevices(uint(i), ipAddr, duration)
+					if err != nil {
+						return err
+					}
 
-				discoveryResults = append(discoveryResults, devices...)
+					discoveryResults = append(discoveryResults, devices...)
 
-				return nil
-			})
+					return nil
+				})
+			}
+
 		}
 	}
 
@@ -69,7 +68,7 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 	return discoveryResults, nil
 }
 
-func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Device, error) {
+func discoverDevices(version uint, ipAddr *net.IPNet, duration time.Duration) ([]Device, error) {
 	log.Debugf("discoverDevices. Version: %d. IP: %s. Duration: %s", version, ipAddr, duration)
 	var now = time.Now()
 	// Create WS-Discovery request
@@ -120,7 +119,7 @@ func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Dev
 	request = regexp.MustCompile(`\>\s+\<`).ReplaceAllString(request, "><")
 	request = regexp.MustCompile(`\s+`).ReplaceAllString(request, " ")
 	// Create UDP address for local and multicast address
-	localAddress, err := net.ResolveUDPAddr("udp4", ipAddr+":0")
+	localAddress, err := net.ResolveUDPAddr("udp4", ipAddr.IP.String()+":0")
 	if err != nil {
 		return []Device{}, err
 	}
@@ -172,7 +171,7 @@ func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Dev
 		log.Debugf("Camera replied. Version: %d. Data: %s", version, string(buffer))
 
 		// Read and parse WS-Discovery response
-		device, err := readDiscoveryResponse(requestID, buffer)
+		devices, err := readDiscoveryResponse(requestID, buffer)
 		if err != nil && err != errWrongDiscoveryResponse {
 			return discoveryResults, err
 		}
@@ -180,27 +179,37 @@ func discoverDevices(version uint, ipAddr string, duration time.Duration) ([]Dev
 		// fmt.Println(now, device, err)
 
 		// Push device to results
-		discoveryResults = append(discoveryResults, device)
+		for _, device := range devices {
+			parsed, _ := url.Parse(device.XAddr)
+
+			ipA, _, _ := net.ParseCIDR(fmt.Sprintf("%s/32", parsed.Hostname()))
+
+			// log.Debug(ipAddr.IP.String(), ipAddr.Mask.String(), "contains", parsed.Hostname(), " = ", ipAddr.Contains(ipA))
+
+			if ipAddr.Contains(ipA) {
+				discoveryResults = append(discoveryResults, device)
+			}
+		}
 	}
 
 	return discoveryResults, nil
 }
 
 // readDiscoveryResponse reads and parses WS-Discovery response
-func readDiscoveryResponse(messageID string, buffer []byte) (Device, error) {
+func readDiscoveryResponse(messageID string, buffer []byte) ([]Device, error) {
 	// Inital result
 	result := Device{}
 
 	// Parse XML to map
 	mapXML, err := mxj.NewMapXml(buffer)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	// Check if this response is for our request
 	responseMessageID, _ := mapXML.ValueForPathString("Envelope.Header.RelatesTo")
 	if responseMessageID != messageID {
-		return result, errWrongDiscoveryResponse
+		return nil, errWrongDiscoveryResponse
 	}
 
 	// Get device's ID and clean it
@@ -222,13 +231,21 @@ func readDiscoveryResponse(messageID string, buffer []byte) (Device, error) {
 	xAddrs, _ := mapXML.ValueForPathString("Envelope.Body.ProbeMatches.ProbeMatch.XAddrs")
 	listXAddr := strings.Split(xAddrs, " ")
 	if len(listXAddr) == 0 {
-		return result, errors.New("Device does not have any xAddr")
+		return nil, errors.New("Device does not have any xAddr")
 	}
 
-	// Finalize result
-	result.ID = deviceID
-	result.Name = deviceName
-	result.XAddr = listXAddr[0]
+	var devices = make([]Device, len(listXAddr))
 
-	return result, nil
+	for idx, xAddr := range listXAddr {
+		var r = result
+
+		// Finalize result
+		r.ID = deviceID
+		r.Name = deviceName
+		r.XAddr = xAddr
+
+		devices[idx] = r
+	}
+
+	return devices, nil
 }
