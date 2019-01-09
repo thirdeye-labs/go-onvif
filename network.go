@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	"github.com/pkg/errors"
 )
 
 type NetworkProtocolsResponse struct {
@@ -36,20 +38,20 @@ func (device Device) GetNetworkProtocols() ([]NetworkProtocol, error) {
 	// Send SOAP request
 	response, err := soap.SendRequest(device.XAddr)
 	if err != nil {
-		return []NetworkProtocol{}, err
+		return nil, errors.Wrap(err, "GetNetworkProtocols: Could not send SOAP request")
 	}
 
 	// Parse response to interface
 	npResp, err := response.ValueForPath("Envelope.Body.GetNetworkProtocolsResponse")
 	if err != nil {
-		return []NetworkProtocol{}, err
+		return nil, errors.Wrap(err, "GetNetworkProtocols: Parse network protocols response")
 	}
 
 	m, err := json.MarshalIndent(npResp, "  ", "  ")
 
 	var npr NetworkProtocolsResponse
 	if err := json.Unmarshal(m, &npr); err != nil {
-		return []NetworkProtocol{}, err
+		return nil, errors.Wrap(err, "GetNetworkProtocols: Could not unmarshal protocols response")
 	}
 
 	var nps = make([]NetworkProtocol, len(npr.NetworkProtocols))

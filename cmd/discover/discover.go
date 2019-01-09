@@ -63,6 +63,8 @@ func main() {
 		for i := 0; i < found; i++ {
 			fmt.Println("XAddr", d[i].XAddr)
 			nps, err := d[i].GetNetworkProtocols()
+			d[i].User = ""
+			d[i].Password = ""
 
 			if err != nil {
 				fmt.Println(err)

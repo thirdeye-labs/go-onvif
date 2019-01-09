@@ -42,7 +42,6 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 	for _, addr := range addrs {
 		ipAddr, ok := addr.(*net.IPNet)
 		if ok && !ipAddr.IP.IsLoopback() && ipAddr.IP.To4() != nil {
-			// ipAddrs = append(ipAddrs, ipAddr.IP.String())
 
 			for i := 1; i <= 2; i++ {
 				i, ipAddr := i, ipAddr
