@@ -2,7 +2,6 @@ package onvif
 
 import (
 	"context"
-	"errors"
 	"net"
 	"regexp"
 	"strings"
@@ -11,6 +10,8 @@ import (
 	"github.com/apex/log"
 	"github.com/clbanning/mxj"
 	"github.com/gofrs/uuid"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 var errWrongDiscoveryResponse = errors.New("Response is not related to discovery request")
@@ -42,16 +43,27 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 	// Create initial discovery results
 	discoveryResults := []Device{}
 
+	eg, ctx := errgroup.WithContext(ctx)
+
 	// Discover device on each interface's network
 	for _, ipAddr := range ipAddrs {
 		for i := 1; i <= 2; i++ {
-			devices, err := discoverDevices(uint(i), ipAddr, duration)
-			if err != nil {
-				return []Device{}, err
-			}
+			i, ipAddr := i, ipAddr
+			eg.Go(func() error {
+				devices, err := discoverDevices(uint(i), ipAddr, duration)
+				if err != nil {
+					return err
+				}
 
-			discoveryResults = append(discoveryResults, devices...)
+				discoveryResults = append(discoveryResults, devices...)
+
+				return nil
+			})
 		}
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, errors.Wrap(err, "Error waiting for discovery to complete")
 	}
 
 	return discoveryResults, nil
