@@ -11,7 +11,7 @@ var deviceXMLNs = []string{
 }
 
 // GetInformation fetch information of ONVIF camera
-func (device Device) GetInformation() (DeviceInformation, error) {
+func (device *Device) GetInformation() (DeviceInformation, error) {
 	// Create SOAP
 	soap := SOAP{
 		Body:     "<tds:GetDeviceInformation/>",
@@ -46,7 +46,7 @@ func (device Device) GetInformation() (DeviceInformation, error) {
 }
 
 // GetCapabilities fetch info of ONVIF camera's capabilities
-func (device Device) GetCapabilities() (DeviceCapabilities, error) {
+func (device *Device) GetCapabilities() (DeviceCapabilities, error) {
 	// Create SOAP
 	soap := SOAP{
 		XMLNs: deviceXMLNs,
@@ -121,7 +121,7 @@ func (device Device) GetCapabilities() (DeviceCapabilities, error) {
 }
 
 // GetDiscoveryMode fetch network discovery mode of an ONVIF camera
-func (device Device) GetDiscoveryMode() (string, error) {
+func (device *Device) GetDiscoveryMode() (string, error) {
 	// Create SOAP
 	soap := SOAP{
 		Body:     "<tds:GetDiscoveryMode/>",
@@ -142,7 +142,7 @@ func (device Device) GetDiscoveryMode() (string, error) {
 }
 
 // GetScopes fetch scopes of an ONVIF camera
-func (device Device) GetScopes() ([]string, error) {
+func (device *Device) GetScopes() ([]string, error) {
 	// Create SOAP
 	soap := SOAP{
 		Body:     "<tds:GetScopes/>",
@@ -176,7 +176,7 @@ func (device Device) GetScopes() ([]string, error) {
 }
 
 // GetHostname fetch hostname of an ONVIF camera
-func (device Device) GetHostname() (HostnameInformation, error) {
+func (device *Device) GetHostname() (HostnameInformation, error) {
 	// Create SOAP
 	soap := SOAP{
 		Body:     "<tds:GetHostname/>",
@@ -208,7 +208,7 @@ func (device Device) GetHostname() (HostnameInformation, error) {
 }
 
 // GetNetworkInterfaces fetches the Network Interfaces of an ONVIF camera
-func (device Device) GetNetworkInterfaces() (NetworkInterfaces, error) {
+func (device *Device) GetNetworkInterfaces() (NetworkInterfaces, error) {
 	// Create SOAP
 	soap := SOAP{
 		Body:     "<tds:GetNetworkInterfaces/>",
@@ -236,4 +236,44 @@ func (device Device) GetNetworkInterfaces() (NetworkInterfaces, error) {
 	}
 
 	return ni, nil
+}
+
+// GetNetworkInterfaces fetches the Network Interfaces of an ONVIF camera
+func (device *Device) GetServices() (services []Service, err error) {
+	// Create SOAP
+	soap := SOAP{
+		Body: `<tds:GetServices xmlns:ns0="http://www.onvif.org/ver10/device/wsdl">
+			<ns0:IncludeCapability>false</ns0:IncludeCapability>
+		</tds:GetServices>`,
+		XMLNs:    deviceXMLNs,
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	// Send SOAP request
+	response, err := soap.SendRequest(device.XAddr)
+	if err != nil {
+		return
+	}
+
+	// Parse response to interface
+	servicesInfo, err := response.ValuesForPath("Envelope.Body.GetServicesResponse.Service")
+	if err != nil {
+		return
+	}
+
+	_services := make(map[string]Service)
+	for _, svc := range servicesInfo {
+		if mapService, ok := svc.(map[string]interface{}); ok {
+			newService := Service{
+				NameSpace: mapService["Namespace"].(string),
+				XAddr:     mapService["XAddr"].(string),
+			}
+			_services[newService.NameSpace] = newService
+			services = append(services, newService)
+		}
+	}
+	device.Services = _services
+
+	return
 }

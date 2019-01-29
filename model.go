@@ -7,6 +7,7 @@ type Device struct {
 	XAddr    string
 	User     string
 	Password string
+	Services map[string]Service
 }
 
 // DeviceInformation contains information of ONVIF camera
@@ -131,4 +132,15 @@ type FromDHCP struct {
 
 type NetworkInfo struct {
 	HwAddress string
+}
+
+type Service struct {
+	NameSpace string
+	XAddr     string
+	Version   Version
+}
+
+type Version struct {
+	Major int
+	Minor int
 }

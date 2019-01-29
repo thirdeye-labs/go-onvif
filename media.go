@@ -1,12 +1,16 @@
 package onvif
 
+import "fmt"
+
+const NameSpace = "http://www.onvif.org/ver10/media/wsdl"
+
 var mediaXMLNs = []string{
 	`xmlns:trt="http://www.onvif.org/ver10/media/wsdl"`,
 	`xmlns:tt="http://www.onvif.org/ver10/schema"`,
 }
 
 // GetProfiles fetch available media profiles of ONVIF camera
-func (device Device) GetProfiles() ([]MediaProfile, error) {
+func (device *Device) GetProfiles() ([]MediaProfile, error) {
 	// Create SOAP
 	soap := SOAP{
 		Body:     "<trt:GetProfiles/>",
@@ -14,9 +18,9 @@ func (device Device) GetProfiles() ([]MediaProfile, error) {
 		User:     device.User,
 		Password: device.Password,
 	}
-
+	fmt.Println(device)
 	// Send SOAP request
-	response, err := soap.SendRequest(device.XAddr)
+	response, err := soap.SendRequest(device.Services[NameSpace].XAddr)
 	if err != nil {
 		return []MediaProfile{}, err
 	}
@@ -122,7 +126,7 @@ func (device Device) GetProfiles() ([]MediaProfile, error) {
 
 // GetStreamURI fetch stream URI of a media profile.
 // Possible protocol is UDP, HTTP or RTSP
-func (device Device) GetStreamURI(profileToken, protocol string) (MediaURI, error) {
+func (device *Device) GetStreamURI(profileToken, protocol string) (MediaURI, error) {
 	// Create SOAP
 	soap := SOAP{
 		XMLNs: mediaXMLNs,
@@ -138,7 +142,7 @@ func (device Device) GetStreamURI(profileToken, protocol string) (MediaURI, erro
 	}
 
 	// Send SOAP request
-	response, err := soap.SendRequest(device.XAddr)
+	response, err := soap.SendRequest(device.Services[NameSpace].XAddr)
 	if err != nil {
 		return MediaURI{}, err
 	}

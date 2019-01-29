@@ -19,11 +19,11 @@ import (
 var errWrongDiscoveryResponse = errors.New("Response is not related to discovery request")
 
 // StartDiscovery send a WS-Discovery message and wait for all matching device to respond
-func StartDiscovery(duration time.Duration) ([]Device, error) {
+func StartDiscovery(duration time.Duration) ([]*Device, error) {
 	// Get list of interface address
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return []Device{}, err
+		return []*Device{}, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), duration)
@@ -32,11 +32,11 @@ func StartDiscovery(duration time.Duration) ([]Device, error) {
 	return StartDiscoveryWithContext(ctx, addrs, duration)
 }
 
-func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration time.Duration) ([]Device, error) {
+func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration time.Duration) ([]*Device, error) {
 	eg, ctx := errgroup.WithContext(ctx)
 
 	// Create initial discovery results
-	discoveryResults := []Device{}
+	discoveryResults := []*Device{}
 
 	// Fetch IPv4 address
 	for _, addr := range addrs {
@@ -67,7 +67,7 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 	return discoveryResults, nil
 }
 
-func discoverDevices(version uint, ipAddr *net.IPNet, duration time.Duration) ([]Device, error) {
+func discoverDevices(version uint, ipAddr *net.IPNet, duration time.Duration) ([]*Device, error) {
 	log.Debugf("discoverDevices. Version: %d. IP: %s. Duration: %s", version, ipAddr, duration)
 	var now = time.Now()
 	// Create WS-Discovery request
@@ -120,37 +120,37 @@ func discoverDevices(version uint, ipAddr *net.IPNet, duration time.Duration) ([
 	// Create UDP address for local and multicast address
 	localAddress, err := net.ResolveUDPAddr("udp4", ipAddr.IP.String()+":0")
 	if err != nil {
-		return []Device{}, err
+		return []*Device{}, err
 	}
 
 	// fmt.Println("ip", ipAddr, duration, localAddress)
 
 	multicastAddress, err := net.ResolveUDPAddr("udp4", "239.255.255.250:3702")
 	if err != nil {
-		return []Device{}, err
+		return []*Device{}, err
 	}
 
 	// Create UDP connection to listen for respond from matching device
 	conn, err := net.ListenUDP("udp", localAddress)
 	if err != nil {
-		return []Device{}, err
+		return []*Device{}, err
 	}
 	defer conn.Close()
 
 	// Set connection's timeout
 	err = conn.SetDeadline(now.Add(duration))
 	if err != nil {
-		return []Device{}, err
+		return []*Device{}, err
 	}
 
 	// Send WS-Discovery request to multicast address
 	_, err = conn.WriteToUDP([]byte(request), multicastAddress)
 	if err != nil {
-		return []Device{}, err
+		return []*Device{}, err
 	}
 
 	// Create initial discovery results
-	discoveryResults := []Device{}
+	discoveryResults := []*Device{}
 
 	// Keep reading UDP message until timeout
 	for {
@@ -195,10 +195,7 @@ func discoverDevices(version uint, ipAddr *net.IPNet, duration time.Duration) ([
 }
 
 // readDiscoveryResponse reads and parses WS-Discovery response
-func readDiscoveryResponse(messageID string, buffer []byte) ([]Device, error) {
-	// Inital result
-	result := Device{}
-
+func readDiscoveryResponse(messageID string, buffer []byte) ([]*Device, error) {
 	// Parse XML to map
 	mapXML, err := mxj.NewMapXml(buffer)
 	if err != nil {
@@ -233,17 +230,14 @@ func readDiscoveryResponse(messageID string, buffer []byte) ([]Device, error) {
 		return nil, errors.New("Device does not have any xAddr")
 	}
 
-	var devices = make([]Device, len(listXAddr))
+	var devices = make([]*Device, len(listXAddr))
 
 	for idx, xAddr := range listXAddr {
-		var r = result
-
-		// Finalize result
-		r.ID = deviceID
-		r.Name = deviceName
-		r.XAddr = xAddr
-
-		devices[idx] = r
+		devices[idx] = &Device{
+			ID:    deviceID,
+			Name:  deviceName,
+			XAddr: xAddr,
+		}
 	}
 
 	return devices, nil
