@@ -26,6 +26,12 @@ func interfaceToInt(src interface{}) int {
 	return number
 }
 
+func interfaceToFloat64(src interface{}) float64 {
+	strNumber := interfaceToString(src)
+	number, _ := strconv.ParseFloat(strNumber, 64)
+	return number
+}
+
 func prettyJSON(src interface{}) string {
 	result, _ := json.MarshalIndent(&src, "", "    ")
 	return string(result)

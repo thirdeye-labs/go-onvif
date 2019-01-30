@@ -144,3 +144,48 @@ type Version struct {
 	Major int
 	Minor int
 }
+
+type ModeAndLevel struct {
+	Mode  string  `json:"Mode"`
+	Level float64 `json:"Level"`
+}
+
+type Exposure20 struct {
+	Mode            string  `json:"Mode"`
+	Priority        string  `json:"Priority"`
+	MinExposureTime float64 `json:"MinExposureTime"`
+	MaxExposureTime float64 `json:"MaxExposureTime"`
+	MinGain         float64 `json:"MinGain"`
+	MaxGain         float64 `json:"MaxGain"`
+	MinIris         float64 `json:"MinIris"`
+	MaxIris         float64 `json:"MaxIris"`
+	ExposureTime    float64 `json:"ExposureTime"`
+	Gain            float64 `json:"Gain"`
+	Iris            float64 `json:"Iris"`
+}
+
+type FocusConfiguration20 struct {
+	AutoFocusMode string  `json:"AutoFocusMode"`
+	DefaultSpeed  float64 `json:"DefaultSpeed"`
+	NearLimit     float64 `json:"NearLimit"`
+	FarLimit      float64 `json:"FarLimit"`
+}
+
+type WhiteBalance20 struct {
+	Mode   string  `json:"Mode"`
+	CrGain float64 `json:"CrGain"`
+	CbGain float64 `json:"CbGain"`
+}
+
+type ImagingSettings struct {
+	BacklightCompensation ModeAndLevel
+	Brightness            float64 `json:"Brightness"`
+	ColorSaturation       float64 `json:"ColorSaturation"`
+	Contrast              float64 `json:"Contrast"` //对比度
+	Exposure              Exposure20
+	Focus                 FocusConfiguration20
+	IrCutFilter           string  `json:"IrCutFilter"`
+	Sharpness             float64 `json:"Sharpness"`
+	WideDynamicRange      ModeAndLevel
+	WhiteBalance          WhiteBalance20
+}

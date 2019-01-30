@@ -1,8 +1,6 @@
 package onvif
 
-import "fmt"
-
-const NameSpace = "http://www.onvif.org/ver10/media/wsdl"
+const mediaNameSpace = "http://www.onvif.org/ver10/media/wsdl"
 
 var mediaXMLNs = []string{
 	`xmlns:trt="http://www.onvif.org/ver10/media/wsdl"`,
@@ -18,9 +16,9 @@ func (device *Device) GetProfiles() ([]MediaProfile, error) {
 		User:     device.User,
 		Password: device.Password,
 	}
-	fmt.Println(device)
+
 	// Send SOAP request
-	response, err := soap.SendRequest(device.Services[NameSpace].XAddr)
+	response, err := soap.SendRequest(device.Services[mediaNameSpace].XAddr)
 	if err != nil {
 		return []MediaProfile{}, err
 	}
@@ -142,7 +140,7 @@ func (device *Device) GetStreamURI(profileToken, protocol string) (MediaURI, err
 	}
 
 	// Send SOAP request
-	response, err := soap.SendRequest(device.Services[NameSpace].XAddr)
+	response, err := soap.SendRequest(device.Services[mediaNameSpace].XAddr)
 	if err != nil {
 		return MediaURI{}, err
 	}
