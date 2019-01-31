@@ -9,7 +9,7 @@ import (
 const imageingNameSpace = "http://www.onvif.org/ver20/imaging/wsdl"
 
 var imagingXMLNs = []string{
-	`xmlns:trt="http://www.onvif.org/ver20/imaging/wsdl"`,
+	`xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl"`,
 	`xmlns:tt="http://www.onvif.org/ver10/schema"`,
 }
 
@@ -17,9 +17,9 @@ var imagingXMLNs = []string{
 func (device *Device) GetImagingSettings(videoSourceToken string) (ImagingSettings, error) {
 	// Create SOAP
 	soap := SOAP{
-		Body: fmt.Sprintf(`<timg:GetImagingSettings xmlns:ns0="%s">
+		Body: fmt.Sprintf(`<GetImagingSettings xmlns="%s">
 					<VideoSourceToken>%s</VideoSourceToken>
-		</timg:GetImagingSettings>`, imageingNameSpace, videoSourceToken),
+		</GetImagingSettings>`, imageingNameSpace, videoSourceToken),
 		// XMLNs:    imagingXMLNs,
 		User:     device.User,
 		Password: device.Password,
