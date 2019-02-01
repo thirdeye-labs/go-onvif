@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -50,11 +51,14 @@ func (soap SOAP) SendRequest(xaddr string) (mxj.Map, error) {
 
 	// Send request
 	resp, err := httpClient.Do(req)
-
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf(resp.Status)
+	}
 
 	// Read response body
 	responseBody, err := ioutil.ReadAll(resp.Body)
