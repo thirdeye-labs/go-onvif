@@ -214,11 +214,15 @@ func readDiscoveryResponse(messageID string, buffer []byte) ([]*Device, error) {
 
 	// Get device's name
 	deviceName := ""
+	deviceMAC := ""
 	scopes, _ := mapXML.ValueForPathString("Envelope.Body.ProbeMatches.ProbeMatch.Scopes")
 	for _, scope := range strings.Split(scopes, " ") {
 		if strings.HasPrefix(scope, "onvif://www.onvif.org/name/") {
 			deviceName = strings.Replace(scope, "onvif://www.onvif.org/name/", "", 1)
 			deviceName = strings.Replace(deviceName, "_", " ", -1)
+		}
+		if strings.HasPrefix(scope, "onvif://www.onvif.org/MAC/") {
+			deviceMAC = strings.Replace(scope, "onvif://www.onvif.org/MAC/", "", 1)
 			break
 		}
 	}
@@ -234,9 +238,10 @@ func readDiscoveryResponse(messageID string, buffer []byte) ([]*Device, error) {
 
 	for idx, xAddr := range listXAddr {
 		devices[idx] = &Device{
-			ID:    deviceID,
-			Name:  deviceName,
-			XAddr: xAddr,
+			ID:      deviceID,
+			Name:    deviceName,
+			MACAddr: deviceMAC,
+			XAddr:   xAddr,
 		}
 	}
 

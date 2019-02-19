@@ -4,6 +4,7 @@ package onvif
 type Device struct {
 	ID       string
 	Name     string
+	MACAddr  string
 	XAddr    string
 	User     string
 	Password string
@@ -181,7 +182,7 @@ type ImagingSettings struct {
 	BacklightCompensation ModeAndLevel
 	Brightness            float64 `json:"Brightness"`
 	ColorSaturation       float64 `json:"ColorSaturation"`
-	Contrast              float64 `json:"Contrast"` //对比度
+	Contrast              float64 `json:"Contrast"`
 	Exposure              Exposure20
 	Focus                 FocusConfiguration20
 	IrCutFilter           string  `json:"IrCutFilter"`
