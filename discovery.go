@@ -220,7 +220,6 @@ func readDiscoveryResponse(messageID string, buffer []byte) ([]*Device, error) {
 		if strings.HasPrefix(scope, "onvif://www.onvif.org/name/") {
 			deviceName = strings.Replace(scope, "onvif://www.onvif.org/name/", "", 1)
 			deviceName = strings.Replace(deviceName, "_", " ", -1)
-			deviceName = strings.Replace(deviceName, "%20", " ", -1)
 		}
 		if strings.HasPrefix(scope, "onvif://www.onvif.org/MAC/") {
 			deviceMAC = strings.Replace(scope, "onvif://www.onvif.org/MAC/", "", 1)
