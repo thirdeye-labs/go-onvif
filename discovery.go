@@ -43,20 +43,16 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 		ipAddr, ok := addr.(*net.IPNet)
 		if ok && !ipAddr.IP.IsLoopback() && ipAddr.IP.To4() != nil {
 
-			for i := 1; i <= 3; i++ {
-				i, ipAddr := i, ipAddr
-				eg.Go(func() error {
-					devices, err := discoverDevices(uint(i), ipAddr, duration)
-					if err != nil {
-						return err
-					}
+			eg.Go(func() error {
+				devices, err := discoverDevices(ipAddr, duration)
+				if err != nil {
+					return err
+				}
 
-					discoveryResults = append(discoveryResults, devices...)
+				discoveryResults = append(discoveryResults, devices...)
 
-					return nil
-				})
-			}
-
+				return nil
+			})
 		}
 	}
 
@@ -67,55 +63,18 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 	return discoveryResults, nil
 }
 
-func discoverDevices(version uint, ipAddr *net.IPNet, duration time.Duration) ([]*Device, error) {
-	log.Debugf("discoverDevices. Version: %d. IP: %s. Duration: %s", version, ipAddr, duration)
+func discoverDevices(ipAddr *net.IPNet, duration time.Duration) ([]*Device, error) {
+	log.Debugf("discoverDevices. IP: %s. Duration: %s", ipAddr, duration)
 	var now = time.Now()
 	// Create WS-Discovery request
-	requestID := "uuid:" + uuid.Must(uuid.NewV4()).String()
-	request := `
-		<?xml version="1.0" encoding="UTF-8"?>
-		<e:Envelope
-		    xmlns:e="http://www.w3.org/2003/05/soap-envelope"
-		    xmlns:w="http://schemas.xmlsoap.org/ws/2004/08/addressing"
-		    xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery"
-		    xmlns:dn="http://www.onvif.org/ver10/network/wsdl">
-		    <e:Header>
-		        <w:MessageID>` + requestID + `</w:MessageID>
-		        <w:To e:mustUnderstand="true">urn:schemas-xmlsoap-org:ws:2005:04:discovery</w:To>
-		        <w:Action a:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe
-		        </w:Action>
-		    </e:Header>
-		    <e:Body>
-		        <d:Probe>
-		            <d:Types>dn:NetworkVideoTransmitter</d:Types>
-		        </d:Probe>
-		    </e:Body>
-		</e:Envelope>`
+	messageID := "uuid:" + uuid.Must(uuid.NewV4()).String()
 
-	var requestV1 = `
-		<Envelope xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:i="http://printer.example.org/2003/imaging" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
-		<Header>
-			<Action>
-				http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe
-			</Action>
-			<MessageID>
-				` + requestID + `
-			</MessageID>
-			<To>
-				urn:schemas-xmlsoap-org:ws:2005:04:discovery
-			</To>
-		</Header>
-		<Body>
-		</Body>
-		</Envelope>
-	`
-
-	var requestV2 = `
+	var request = `
 		<?xml version="1.0" encoding="utf-8"?>
 		<Envelope xmlns:dn="http://www.onvif.org/ver10/network/wsdl"
 			xmlns="http://www.w3.org/2003/05/soap-envelope">
 			<Header>
-				<wsa:MessageID xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">` + requestID + `</wsa:MessageID>
+				<wsa:MessageID xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">` + messageID + `</wsa:MessageID>
 				<wsa:To xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To>
 				<wsa:Action xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action>
 			</Header>
@@ -129,13 +88,6 @@ func discoverDevices(version uint, ipAddr *net.IPNet, duration time.Duration) ([
 			</Body>
 		</Envelope>
 	`
-
-	if version == 1 {
-		request = requestV1
-	}
-	if version == 2 {
-		request = requestV2
-	}
 
 	// Clean WS-Discovery message
 	request = regexp.MustCompile(`\>\s+\<`).ReplaceAllString(request, "><")
@@ -190,10 +142,10 @@ func discoverDevices(version uint, ipAddr *net.IPNet, duration time.Duration) ([
 			}
 		}
 
-		log.Debugf("Camera replied. Version: %d. Data: %s", version, string(buffer))
+		log.Debugf("Camera replied. Data: %s", string(buffer))
 
 		// Read and parse WS-Discovery response
-		devices, err := readDiscoveryResponse(requestID, buffer)
+		devices, err := readDiscoveryResponse(messageID, buffer)
 		if err != nil && err != errWrongDiscoveryResponse {
 			return discoveryResults, err
 		}
