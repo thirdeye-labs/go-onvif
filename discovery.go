@@ -43,7 +43,7 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 		ipAddr, ok := addr.(*net.IPNet)
 		if ok && !ipAddr.IP.IsLoopback() && ipAddr.IP.To4() != nil {
 
-			for i := 1; i <= 2; i++ {
+			for i := 1; i <= 3; i++ {
 				i, ipAddr := i, ipAddr
 				eg.Go(func() error {
 					devices, err := discoverDevices(uint(i), ipAddr, duration)
@@ -110,8 +110,31 @@ func discoverDevices(version uint, ipAddr *net.IPNet, duration time.Duration) ([
 		</Envelope>
 	`
 
+	var requestV2 = `
+		<?xml version="1.0" encoding="utf-8"?>
+		<Envelope xmlns:dn="http://www.onvif.org/ver10/network/wsdl"
+			xmlns="http://www.w3.org/2003/05/soap-envelope">
+			<Header>
+				<wsa:MessageID xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">` + requestID + `</wsa:MessageID>
+				<wsa:To xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To>
+				<wsa:Action xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action>
+			</Header>
+			<Body>
+				<Probe xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+					xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+					xmlns="http://schemas.xmlsoap.org/ws/2005/04/discovery">
+					<Types>dn:NetworkVideoTransmitter</Types>
+					<Scopes />
+				</Probe>
+			</Body>
+		</Envelope>
+	`
+
 	if version == 1 {
 		request = requestV1
+	}
+	if version == 2 {
+		request = requestV2
 	}
 
 	// Clean WS-Discovery message
