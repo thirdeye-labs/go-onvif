@@ -27,7 +27,7 @@ type NetworkProtocol struct {
 // device on.
 func (device Device) GetNetworkProtocols() ([]NetworkProtocol, error) {
 	// Create SOAP
-	soap := SOAP{
+	soap := &SOAP{
 		XMLNs: mediaXMLNs,
 		Body: `<trt:GetNetworkProtocols>
 		</trt:GetNetworkProtocols>`,

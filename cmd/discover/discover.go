@@ -7,13 +7,10 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/apex/log"
-	onvif "github.com/byronwilliams/go-onvif"
+	. "github.com/jt6562/go-onvif"
 )
 
 func main() {
-	log.SetLevelFromString("debug")
-	log.Debug("Starting")
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -23,7 +20,7 @@ func main() {
 	var addrs []net.Addr
 
 	for _, iface := range ifaces {
-		if iface.Name == "wlp58s0" || iface.Name == "wlan0" || iface.Name == "wlan1" {
+		if iface.Name == "en0" || iface.Name == "wlp58s0" || iface.Name == "wlan0" || iface.Name == "wlan1" {
 			ifaceAddrs, err := iface.Addrs()
 
 			if err != nil {
@@ -47,7 +44,7 @@ func main() {
 		fmt.Println("Discovering...")
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 		defer cancel()
-		d, err := onvif.StartDiscoveryWithContext(ctx, addrs, time.Second*15)
+		d, err := StartDiscoveryWithContext(ctx, addrs, time.Second*15)
 		if err != nil {
 			panic(err)
 		}
@@ -61,15 +58,14 @@ func main() {
 		}
 
 		for i := 0; i < found; i++ {
-			fmt.Println("XAddr", d[i].XAddr)
-			nps, err := d[i].GetNetworkProtocols()
-			d[i].User = ""
-			d[i].Password = ""
+			Info("XAddr", d[i].XAddr)
 
+			d[i].User = "admin"
+			d[i].Password = "admin"
+			nps, err := d[i].GetNetworkProtocols()
 			if err != nil {
-				fmt.Println(err)
+				Error(err)
 			}
-			fmt.Println("XAddr", d[i].XAddr)
 			parsed, _ := url.Parse(d[i].XAddr)
 			host, _, _ := net.SplitHostPort(parsed.Host)
 
