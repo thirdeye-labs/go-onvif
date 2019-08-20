@@ -60,6 +60,7 @@ type VideoRateControl struct {
 	BitrateLimit     int
 	EncodingInterval int
 	FrameRateLimit   int
+	ConstantBitRate  bool
 }
 
 // VideoEncoderConfig contains configuration of a video encoder
@@ -68,6 +69,7 @@ type VideoEncoderConfig struct {
 	Token          string
 	Encoding       string
 	Quality        int
+	GovLength      int
 	RateControl    VideoRateControl
 	Resolution     MediaBounds
 	SessionTimeout string
@@ -107,6 +109,41 @@ type MediaURI struct {
 	Timeout             string
 	InvalidAfterConnect bool
 	InvalidAfterReboot  bool
+}
+
+// MediaOSDS contains streaming URI of an ONVIF camera
+type PosXY struct {
+	x float64
+	y float64
+}
+
+type Position struct {
+	Type string
+	Pos  PosXY
+}
+
+type OSDColor struct {
+	Transparent int
+	// Color       string
+}
+
+type TextString struct {
+	IsPersistentText bool
+	Type             string
+	DateFormat       string
+	TimeFormat       string
+	FontSize         int
+	FontColor        OSDColor
+	BackgroundColor  OSDColor
+	PlainText        string
+}
+
+type OSD struct {
+	Token            string
+	VideoSourceToken string
+	Type             string
+	Pos              Position
+	Text             TextString
 }
 
 type NetworkInterfaces struct {

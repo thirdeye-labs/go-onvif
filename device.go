@@ -2,7 +2,10 @@ package onvif
 
 import (
 	"encoding/json"
+	"fmt"
+	"regexp"
 	"strings"
+	"time"
 )
 
 var deviceXMLNs = []string{
@@ -276,4 +279,110 @@ func (device *Device) GetServices() (services []Service, err error) {
 	device.Services = _services
 
 	return
+}
+
+func (device *Device) SetNTP(ntpServer string) error {
+	var soap SOAP
+	// Create SOAP
+
+	re := regexp.MustCompile(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.([0-9]{1,3})$`)
+	r := re.FindStringSubmatch(ntpServer)
+	if len(r) == 0 {
+		soap = SOAP{
+			XMLNs: deviceXMLNs,
+			Body: `<SetNTP xmlns="http://www.onvif.org/ver10/device/wsdl">
+		<FromDHCP>false</FromDHCP>
+		<NTPManual>
+		  <Type xmlns="http://www.onvif.org/ver10/schema">DNS</Type>
+		  <DNSname xmlns="http://www.onvif.org/ver10/schema">` + ntpServer + `</DNSname>
+		</NTPManual>
+	    </SetNTP>`,
+			User:     device.User,
+			Password: device.Password,
+		}
+	} else {
+		soap = SOAP{
+			XMLNs: deviceXMLNs,
+			Body: `<SetNTP xmlns="http://www.onvif.org/ver10/device/wsdl">
+		<FromDHCP>false</FromDHCP>
+		<NTPManual>
+		  <Type xmlns="http://www.onvif.org/ver10/schema">IPv4</Type>
+		  <IPv4Address xmlns="http://www.onvif.org/ver10/schema">` + ntpServer + `</IPv4Address>
+		</NTPManual>
+	    </SetNTP>`,
+			User:     device.User,
+			Password: device.Password,
+		}
+	}
+
+	// Send SOAP request
+	_, err := soap.SendRequest(device.XAddr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (device *Device) SetHostname(name string) error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs: deviceXMLNs,
+		Body: `<SetHostname xmlns="http://www.onvif.org/ver10/device/wsdl">
+		<Name>` + name + `</Name>
+	    </SetHostname>`,
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	// Send SOAP request
+	_, err := soap.SendRequest(device.XAddr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (device *Device) SetSystemDateAndTime(useNTP bool, t time.Time) error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs:    []string{`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`, `xmlns:xsd="http://www.w3.org/2001/XMLSchema"`},
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	if useNTP {
+		soap.Body = `<SetSystemDateAndTime xmlns="http://www.onvif.org/ver10/device/wsdl">
+      <DateTimeType>NTP</DateTimeType>
+      <DaylightSavings>false</DaylightSavings>
+    </SetSystemDateAndTime>`
+	} else {
+		soap.Body = `<SetSystemDateAndTime xmlns="http://www.onvif.org/ver10/device/wsdl">
+      <DateTimeType>Manual</DateTimeType>
+      <DaylightSavings>false</DaylightSavings>
+	  <TimeZone>
+          <TZ>CST-8</TZ>
+	  </TimeZone>
+      <UTCDateTime>
+        <Time xmlns="http://www.onvif.org/ver10/schema">
+          <Hour>` + fmt.Sprintf("%d", t.UTC().Hour()) + `</Hour>
+          <Minute>` + fmt.Sprintf("%d", t.UTC().Minute()) + `</Minute>
+          <Second>` + fmt.Sprintf("%d", t.UTC().Second()) + `</Second>
+        </Time>
+        <Date xmlns="http://www.onvif.org/ver10/schema">
+          <Year>` + fmt.Sprintf("%d", t.UTC().Year()) + `</Year>
+          <Month>` + fmt.Sprintf("%d", t.UTC().Month()) + `</Month>
+          <Day>` + fmt.Sprintf("%d", t.UTC().Day()) + `</Day>
+        </Date>
+      </UTCDateTime>
+    </SetSystemDateAndTime>`
+	}
+
+	// Send SOAP request
+	_, err := soap.SendRequest(device.XAddr)
+	if err != nil {
+		return err
+	}
+	return nil
 }

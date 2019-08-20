@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-
 	"github.com/clbanning/mxj"
 	uuid "github.com/satori/go.uuid"
 )
@@ -52,7 +51,7 @@ func (soap *SOAP) SendRequest(xaddr string) (mxj.Map, error) {
 	req.Header.Set("Content-Type", "application/soap+xml")
 	req.Header.Set("Charset", "utf-8")
 
-	Debugf("[>>>%s]%s",xaddr,buffer.String())
+	Debugf("[>>>%s]%s", xaddr, buffer.String())
 	// Send request
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -61,14 +60,13 @@ func (soap *SOAP) SendRequest(xaddr string) (mxj.Map, error) {
 	}
 	defer resp.Body.Close()
 
-
 	// Read response body
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		Error(err)
 		return nil, err
 	}
-	Debugf("[<<<%s]%s",xaddr,string(responseBody))
+	Debugf("[<<<%s]%s", xaddr, string(responseBody))
 
 	if resp.StatusCode != 200 {
 
@@ -155,7 +153,6 @@ func (soap SOAP) createRequest() string {
 
 	return request
 }
-
 
 func (soap SOAP) createUserToken() string {
 	//nonce := uuid.NewV4().Bytes()

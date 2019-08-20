@@ -69,26 +69,42 @@ func discoverDevices(ipAddr *net.IPNet, duration time.Duration) ([]*Device, erro
 	// Create WS-Discovery request
 	messageID := "uuid:" + uuid.Must(uuid.NewV4()).String()
 
+	// var request = `
+	// <?xml version="1.0" encoding="utf-8"?>
+	// <Envelope xmlns:dn="http://www.onvif.org/ver10/network/wsdl"
+	// xmlns="http://www.w3.org/2003/05/soap-envelope">
+	// <Header>
+	// <wsa:MessageID xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">` + messageID + `</wsa:MessageID>
+	// <wsa:To xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To>
+	// <wsa:Action xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action>
+	// </Header>
+	// <Body>
+	// <Probe xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	// xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	// xmlns="http://schemas.xmlsoap.org/ws/2005/04/discovery">
+	// <Types>dn:NetworkVideoTransmitter</Types>
+	// <Scopes />
+	// </Probe>
+	// </Body>
+	// </Envelope>
+	// `
 	var request = `
-		<?xml version="1.0" encoding="utf-8"?>
-		<Envelope xmlns:dn="http://www.onvif.org/ver10/network/wsdl"
-			xmlns="http://www.w3.org/2003/05/soap-envelope">
-			<Header>
-				<wsa:MessageID xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">` + messageID + `</wsa:MessageID>
-				<wsa:To xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To>
-				<wsa:Action xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action>
-			</Header>
-			<Body>
-				<Probe xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-					xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-					xmlns="http://schemas.xmlsoap.org/ws/2005/04/discovery">
-					<Types>dn:NetworkVideoTransmitter</Types>
-					<Scopes />
-				</Probe>
-			</Body>
-		</Envelope>
-	`
-
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing">
+  <s:Header>
+    <a:Action s:mustUnderstand="1">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</a:Action>
+    <a:MessageID>` + messageID + `</a:MessageID>
+    <a:ReplyTo>
+      <a:Address>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:Address>
+    </a:ReplyTo>
+    <a:To s:mustUnderstand="1">urn:schemas-xmlsoap-org:ws:2005:04:discovery</a:To>
+  </s:Header>
+  <s:Body>
+    <Probe xmlns="http://schemas.xmlsoap.org/ws/2005/04/discovery">
+      <d:Types xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:dp0="http://www.onvif.org/ver10/network/wsdl">dp0:NetworkVideoTransmitter</d:Types>
+    </Probe>
+  </s:Body>
+</s:Envelope>
+`
 	// Clean WS-Discovery message
 	request = regexp.MustCompile(`\>\s+\<`).ReplaceAllString(request, "><")
 	request = regexp.MustCompile(`\s+`).ReplaceAllString(request, " ")

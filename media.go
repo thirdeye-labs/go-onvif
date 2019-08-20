@@ -1,9 +1,10 @@
 package onvif
 
 import (
-	"net/url"
 	"fmt"
+	"net/url"
 )
+
 const mediaNameSpace = "http://www.onvif.org/ver10/media/wsdl"
 
 var mediaXMLNs = []string{
@@ -27,7 +28,7 @@ func (device *Device) GetProfiles() ([]MediaProfile, error) {
 	}
 
 	// Send SOAP request
-	response, err := soap.SendRequest( fmt.Sprintf("http://%s/onvif/media_service",urlXAddr.Host))
+	response, err := soap.SendRequest(fmt.Sprintf("http://%s/onvif/media_service", urlXAddr.Host))
 	if err != nil {
 		return []MediaProfile{}, err
 	}
@@ -147,9 +148,13 @@ func (device *Device) GetStreamURI(profileToken, protocol string) (MediaURI, err
 		User:     device.User,
 		Password: device.Password,
 	}
+	urlXAddr, err := url.Parse(device.XAddr)
+	if err != nil {
+		return MediaURI{}, err
+	}
 
 	// Send SOAP request
-	response, err := soap.SendRequest("http://192.168.1.200/onvif/media_service")
+	response, err := soap.SendRequest(fmt.Sprintf("http://%s/onvif/Media", urlXAddr.Host))
 	if err != nil {
 		return MediaURI{}, err
 	}
@@ -170,4 +175,312 @@ func (device *Device) GetStreamURI(profileToken, protocol string) (MediaURI, err
 	}
 
 	return streamURI, nil
+}
+
+// GetStreamURI fetch stream URI of a media profile.
+// Possible protocol is UDP, HTTP or RTSP
+func (device *Device) GetOSDs() ([]OSD, error) {
+	// Create SOAP
+	soap := SOAP{
+		XMLNs:    mediaXMLNs,
+		Body:     `<ns0:GetOSDs xmlns:ns0="http://www.onvif.org/ver10/media/wsdl"></ns0:GetOSDs>`,
+		User:     device.User,
+		Password: device.Password,
+	}
+	urlXAddr, err := url.Parse(device.XAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send SOAP request
+	response, err := soap.SendRequest(fmt.Sprintf("http://%s/onvif/Media", urlXAddr.Host))
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse response to interface
+	ifaceOSDs, err := response.ValuesForPath("Envelope.Body.GetOSDsResponse.OSDs")
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse interface to struct
+	result := []OSD{}
+
+	for _, ifaceOSD := range ifaceOSDs {
+		if mapOSD, ok := ifaceOSD.(map[string]interface{}); ok {
+			osd := OSD{}
+			osd.Token = interfaceToString(mapOSD["-token"])
+			osd.VideoSourceToken = interfaceToString(mapOSD["VideoSourceConfigurationToken"])
+			osd.Type = interfaceToString(mapOSD["Type"])
+
+			pos := Position{}
+			if mapPos, ok := mapOSD["Position"].(map[string]interface{}); ok {
+				pos.Type = interfaceToString(mapPos["Type"])
+				posXY := PosXY{}
+				if mapPosXY, ok := mapPos["Pos"].(map[string]interface{}); ok {
+					posXY.x = interfaceToFloat64(mapPosXY["-x"])
+					posXY.y = interfaceToFloat64(mapPosXY["-y"])
+				}
+				pos.Pos = posXY
+			}
+			osd.Pos = pos
+
+			text := TextString{}
+			if mapText, ok := mapOSD["TextString"].(map[string]interface{}); ok {
+				text.IsPersistentText = interfaceToBool(mapText["IsPersistentText"])
+				text.Type = interfaceToString(mapText["Type"])
+				text.DateFormat = interfaceToString(mapText["DateFormat"])
+				text.TimeFormat = interfaceToString(mapText["TimeFormat"])
+				text.FontSize = interfaceToInt(mapText["FontSize"])
+				text.PlainText = interfaceToString(mapText["PlainText"])
+				fontColor := OSDColor{}
+				if mapFont, ok := mapText["FontColor"].(map[string]interface{}); ok {
+					fontColor.Transparent = interfaceToInt(mapFont["Transparent"])
+					// fontColor.Color = interfaceToString(mapFont["Color"])
+				}
+				text.FontColor = fontColor
+
+				bgColor := OSDColor{}
+				if mapBG, ok := mapText["FontColor"].(map[string]interface{}); ok {
+					bgColor.Transparent = interfaceToInt(mapBG["Transparent"])
+					// bgColor.Color = interfaceToString(mapBG["Color"])
+				}
+				text.BackgroundColor = bgColor
+
+			}
+			osd.Text = text
+			result = append(result, osd)
+		}
+	}
+
+	return result, nil
+}
+
+// <tt:FontColor><tt:Color X="0.000000" Y="0.000000" Z="0.000000" Colorspace="http://www.onvif.org/ver10/colorspace/YCbCr"/>
+// </tt:FontColor>
+
+func (device *Device) SetOSD1(token string, text string) error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs: mediaXMLNs,
+		Body: ` <tr2:SetOSD>
+				<tr2:OSD token="` + token + `"><tt:VideoSourceConfigurationToken>VideoSourceToken</tt:VideoSourceConfigurationToken>
+				<tt:Type>Text</tt:Type>
+				<tt:Position><tt:Type>Custom</tt:Type>
+				<tt:Pos x="0.454545" y="-0.777778"/>
+				</tt:Position>
+				<tt:TextString><tt:Type>Plain</tt:Type>
+				<tt:FontSize>32</tt:FontSize>
+				<tt:PlainText>` + text + `</tt:PlainText>
+				<tt:Extension><tt:ChannelName>true</tt:ChannelName>
+				</tt:Extension>
+			    </tt:TextString>
+				</tr2:OSD>
+			    </tr2:SetOSD>`,
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	// fmt.Println(device.XAddr)
+	urlXAddr, err := url.Parse(device.XAddr)
+	if err != nil {
+		return err
+	}
+
+	// Send SOAP request
+	_, err = soap.SendRequest(fmt.Sprintf("http://%s/onvif/Media", urlXAddr.Host))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (device *Device) SetOSD(token string, text string) error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs:    []string{`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`, `xmlns:xsd="http://www.w3.org/2001/XMLSchema"`},
+		User:     device.User,
+		Password: device.Password,
+	}
+	soap.Body = `<SetOSD xmlns="http://www.onvif.org/ver10/media/wsdl">
+		<OSD token="` + token + `">
+        <VideoSourceConfigurationToken xmlns="http://www.onvif.org/ver10/schema">VideoSourceToken</VideoSourceConfigurationToken>
+        <Type xmlns="http://www.onvif.org/ver10/schema">Text</Type>
+        <Position xmlns="http://www.onvif.org/ver10/schema">
+          <Type>Custom</Type>
+		  <Pos x="0.454545" y="-0.777778" />
+        </Position>
+        <TextString xmlns="http://www.onvif.org/ver10/schema">
+          <Type>Plain</Type>
+          <FontSize>32</FontSize>
+          <FontColor>
+            <Color X="0.000000" Y="0.000000" Z="0.000000" Colorspace="http://www.onvif.org/ver10/colorspace/YCbCr" />
+          </FontColor>
+          <PlainText>` + text + `</PlainText>
+	     <Extension>
+	       <tt:ChannelName xmlns:tt="http://www.onvif.org/ver10/schema">true</tt:ChannelName>
+	     </Extension>
+        </TextString>
+      </OSD>
+    </SetOSD>`
+
+	// fmt.Println(device.XAddr)
+	urlXAddr, err := url.Parse(device.XAddr)
+	if err != nil {
+		return err
+	}
+
+	// Send SOAP request
+	_, err = soap.SendRequest(fmt.Sprintf("http://%s/onvif/Media", urlXAddr.Host))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (device *Device) SetVideoEncoderConfiguration1(config VideoEncoderConfig) error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs:    []string{`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`, `xmlns:xsd="http://www.w3.org/2001/XMLSchema"`},
+		User:     device.User,
+		Password: device.Password,
+	}
+	soap.Body = `<SetVideoEncoderConfiguration xmlns="http://www.onvif.org/ver10/media/wsdl">
+		      <Configuration token="` + config.Token + `">
+		        <Name xmlns="http://www.onvif.org/ver10/schema">` + config.Name + `</Name>
+		        <UseCount xmlns="http://www.onvif.org/ver10/schema">1</UseCount>
+		        <GuaranteedFrameRate xmlns="http://www.onvif.org/ver10/schema">false</GuaranteedFrameRate>
+		        <Encoding xmlns="http://www.onvif.org/ver10/schema">H264</Encoding>
+		        <Resolution xmlns="http://www.onvif.org/ver10/schema">
+		          <Width>` + fmt.Sprintf("%d", config.Resolution.Width) + `</Width>
+		          <Height>` + fmt.Sprintf("%d", config.Resolution.Height) + `</Height>
+		        </Resolution>
+		        <H264 xmlns="http://www.onvif.org/ver10/schema">
+		          <GovLength>` + fmt.Sprintf("%d", config.GovLength) + `</GovLength>
+		          <H264Profile>Main</H264Profile>
+		        </H264>
+		        <RateControl xmlns="http://www.onvif.org/ver10/schema">
+		          <FrameRateLimit>` + fmt.Sprintf("%d", config.RateControl.FrameRateLimit) + `</FrameRateLimit>
+		          <EncodingInterval>` + fmt.Sprintf("%d", config.RateControl.EncodingInterval) + `</EncodingInterval>
+		          <BitrateLimit>` + fmt.Sprintf("%d", config.RateControl.BitrateLimit) + `</BitrateLimit>
+		        </RateControl>
+		        <Multicast xmlns="http://www.onvif.org/ver10/schema">
+		          <Address>
+		            <Type>IPv4</Type>
+		            <IPv4Address>0.0.0.0</IPv4Address>
+		          </Address>
+		          <Port>8860</Port>
+		          <TTL>128</TTL>
+		          <AutoStart>false</AutoStart>
+		        </Multicast>
+		        <Quality xmlns="http://www.onvif.org/ver10/schema">` + fmt.Sprintf("%d", config.Quality) + `</Quality>
+				<ForcePersistence xmlns="http://www.onvif.org/ver10/schema">false</ForcePersistence>
+		      </Configuration>
+			</SetVideoEncoderConfiguration>`
+
+	// fmt.Println(device.XAddr)
+	urlXAddr, err := url.Parse(device.XAddr)
+	if err != nil {
+		return err
+	}
+
+	// Send SOAP request
+	_, err = soap.SendRequest(fmt.Sprintf("http://%s/onvif/Media", urlXAddr.Host))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (device *Device) SetVideoEncoderConfiguration(config VideoEncoderConfig) error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs:    []string{`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`, `xmlns:xsd="http://www.w3.org/2001/XMLSchema"`},
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	soap.Body = `<SetVideoEncoderConfiguration xmlns="http://www.onvif.org/ver20/media/wsdl">
+		      <Configuration token="` + config.Token + `" GovLength="` + fmt.Sprintf("%d", config.GovLength) + `" Profile="Main">
+		        <Name xmlns="http://www.onvif.org/ver10/schema">` + config.Name + `</Name>
+		        <UseCount xmlns="http://www.onvif.org/ver10/schema">0</UseCount>
+		        <Encoding xmlns="http://www.onvif.org/ver10/schema">H264</Encoding>
+		        <Resolution xmlns="http://www.onvif.org/ver10/schema">
+		          <Width>` + fmt.Sprintf("%d", config.Resolution.Width) + `</Width>
+		          <Height>` + fmt.Sprintf("%d", config.Resolution.Height) + `</Height>
+		        </Resolution>
+		        <RateControl ConstantBitRate="false" xmlns="http://www.onvif.org/ver10/schema">
+		          <FrameRateLimit>` + fmt.Sprintf("%d", config.RateControl.FrameRateLimit) + `</FrameRateLimit>
+		          <BitrateLimit>` + fmt.Sprintf("%d", config.RateControl.BitrateLimit) + `</BitrateLimit>
+		        </RateControl>
+		        <Multicast xmlns="http://www.onvif.org/ver10/schema">
+		          <Address>
+		            <Type>IPv4</Type>
+		            <IPv4Address>0.0.0.0</IPv4Address>
+		          </Address>
+		          <Port>8860</Port>
+		          <TTL>128</TTL>
+		          <AutoStart>false</AutoStart>
+		        </Multicast>
+		        <Quality xmlns="http://www.onvif.org/ver10/schema">` + fmt.Sprintf("%d", config.Quality) + `</Quality>
+		      </Configuration>
+			</SetVideoEncoderConfiguration>`
+
+	// Send SOAP request
+	urlXAddr, err := url.Parse(device.XAddr)
+	if err != nil {
+		return err
+	}
+	_, err = soap.SendRequest(fmt.Sprintf("http://%s/onvif/Media2", urlXAddr.Host))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (device *Device) SetAudioEncoderConfiguration(config AudioEncoderConfig) error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs:    []string{`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`, `xmlns:xsd="http://www.w3.org/2001/XMLSchema"`},
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	soap.Body = `<SetAudioEncoderConfiguration xmlns="http://www.onvif.org/ver10/media/wsdl">
+      <Configuration token="` + config.Token + `">
+        <Name xmlns="http://www.onvif.org/ver10/schema">` + config.Name + `</Name>
+        <UseCount xmlns="http://www.onvif.org/ver10/schema">3</UseCount>
+        <Encoding xmlns="http://www.onvif.org/ver10/schema">AAC</Encoding>
+        <Bitrate xmlns="http://www.onvif.org/ver10/schema">32</Bitrate>
+        <SampleRate xmlns="http://www.onvif.org/ver10/schema">16</SampleRate>
+        <Multicast xmlns="http://www.onvif.org/ver10/schema">
+          <Address>
+            <Type>IPv4</Type>
+            <IPv4Address>0.0.0.0</IPv4Address>
+          </Address>
+          <Port>8862</Port>
+          <TTL>128</TTL>
+          <AutoStart>false</AutoStart>
+        </Multicast>
+        <SessionTimeout xmlns="http://www.onvif.org/ver10/schema">PT5S</SessionTimeout>
+      </Configuration>
+      <ForcePersistence>true</ForcePersistence>
+    </SetAudioEncoderConfiguration>`
+	// Send SOAP request
+
+	urlXAddr, err := url.Parse(device.XAddr)
+	if err != nil {
+		return err
+	}
+	_, err = soap.SendRequest(fmt.Sprintf("http://%s/onvif/Media", urlXAddr.Host))
+	if err != nil {
+		return err
+	}
+	return nil
 }
