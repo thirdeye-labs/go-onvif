@@ -225,10 +225,7 @@ func (soap *SOAP) handle401(res *http.Response) (err error) {
 			if nonce != "" {
 				var response string
 
-				id, err := uuid.NewV4()
-				if err != nil {
-					return err
-				}
+				id := uuid.NewV4()
 				cnonce := md5hash(string(id.Bytes()))
 				fmt.Println("cnonce:", cnonce)
 
