@@ -157,10 +157,8 @@ func (soap SOAP) createRequest() string {
 func (soap SOAP) createUserToken() string {
 	//nonce := uuid.NewV4().Bytes()
 
-	id, err := uuid.NewV4()
-	if err != nil {
-		return ""
-	}
+	id := uuid.NewV4()
+
 	nonce := id.Bytes()
 
 	nonce64 := base64.StdEncoding.EncodeToString(nonce)
