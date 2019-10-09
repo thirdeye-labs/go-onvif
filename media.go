@@ -456,7 +456,7 @@ func (device *Device) SetAudioEncoderConfiguration(config AudioEncoderConfig) er
       <Configuration token="` + config.Token + `">
         <Name xmlns="http://www.onvif.org/ver10/schema">` + config.Name + `</Name>
         <UseCount xmlns="http://www.onvif.org/ver10/schema">3</UseCount>
-        <Encoding xmlns="http://www.onvif.org/ver10/schema">AAC</Encoding>
+        <Encoding xmlns="http://www.onvif.org/ver10/schema">` + config.Encoding + `</Encoding>
         <Bitrate xmlns="http://www.onvif.org/ver10/schema">32</Bitrate>
         <SampleRate xmlns="http://www.onvif.org/ver10/schema">16</SampleRate>
         <Multicast xmlns="http://www.onvif.org/ver10/schema">
