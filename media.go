@@ -451,14 +451,11 @@ func (device *Device) SetAudioEncoderConfiguration(config AudioEncoderConfig) er
 		User:     device.User,
 		Password: device.Password,
 	}
-
-	soap.Body = `<SetAudioEncoderConfiguration xmlns="http://www.onvif.org/ver10/media/wsdl">
-      <Configuration token="` + config.Token + `">
+	soap.Body = `<SetAudioEncoderConfiguration xmlns="http://www.onvif.org/ver20/media/wsdl">
+      <Configuration token="MainAudioEncoderToken">
         <Name xmlns="http://www.onvif.org/ver10/schema">` + config.Name + `</Name>
-        <UseCount xmlns="http://www.onvif.org/ver10/schema">3</UseCount>
+        <UseCount xmlns="http://www.onvif.org/ver10/schema">2</UseCount>
         <Encoding xmlns="http://www.onvif.org/ver10/schema">` + config.Encoding + `</Encoding>
-        <Bitrate xmlns="http://www.onvif.org/ver10/schema">32</Bitrate>
-        <SampleRate xmlns="http://www.onvif.org/ver10/schema">16</SampleRate>
         <Multicast xmlns="http://www.onvif.org/ver10/schema">
           <Address>
             <Type>IPv4</Type>
@@ -468,17 +465,16 @@ func (device *Device) SetAudioEncoderConfiguration(config AudioEncoderConfig) er
           <TTL>128</TTL>
           <AutoStart>false</AutoStart>
         </Multicast>
-        <SessionTimeout xmlns="http://www.onvif.org/ver10/schema">PT5S</SessionTimeout>
+        <Bitrate xmlns="http://www.onvif.org/ver10/schema">64</Bitrate>
+        <SampleRate xmlns="http://www.onvif.org/ver10/schema">8</SampleRate>
       </Configuration>
-      <ForcePersistence>true</ForcePersistence>
     </SetAudioEncoderConfiguration>`
 	// Send SOAP request
-
 	urlXAddr, err := url.Parse(device.XAddr)
 	if err != nil {
 		return err
 	}
-	_, err = soap.SendRequest(fmt.Sprintf("http://%s/onvif/Media", urlXAddr.Host))
+	_, err = soap.SendRequest(fmt.Sprintf("http://%s/onvif/Media2", urlXAddr.Host))
 	if err != nil {
 		return err
 	}
