@@ -272,7 +272,7 @@ func (device *Device) SetOSD1(token string, text string) error {
 				<tt:Pos x="0.454545" y="-0.777778"/>
 				</tt:Position>
 				<tt:TextString><tt:Type>Plain</tt:Type>
-				<tt:FontSize>32</tt:FontSize>
+				<tt:FontSize>16</tt:FontSize>
 				<tt:PlainText>` + text + `</tt:PlainText>
 				<tt:Extension><tt:ChannelName>true</tt:ChannelName>
 				</tt:Extension>
