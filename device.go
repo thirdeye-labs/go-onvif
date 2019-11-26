@@ -323,6 +323,26 @@ func (device *Device) SetNTP(ntpServer string) error {
 	return nil
 }
 
+func (device *Device) SetDeviceName(name string) error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs: deviceXMLNs,
+		Body: `<SetScopes xmlns="http://www.onvif.org/ver10/device/wsdl">
+		<Scopes>onvif://www.onvif.org/name/` + name + `</Scopes>
+	    </SetScopes>`,
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	// Send SOAP request
+	_, err := soap.SendRequest(device.XAddr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (device *Device) SetHostname(name string) error {
 	var soap SOAP
 	// Create SOAP
