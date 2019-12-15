@@ -20,6 +20,48 @@ type DeviceInformation struct {
 	SerialNumber    string
 }
 
+type NTPInformation struct {
+	FromDHCP    bool
+	NTPFromDHCP NetworkHost
+	NTPManual   NetworkHost
+}
+
+type NetworkHost struct {
+	Type        string
+	IPv4Address string
+	IPv6Address string
+	DNSname     string
+}
+
+type SystemDateAndTime struct {
+	DateTimeType    string
+	DaylightSavings bool
+	TimeZone        TimeZone_
+	UTCDateTime     DateTime
+	LocalDateTime   DateTime
+}
+
+type TimeZone_ struct {
+	TZ string
+}
+
+type DateTime struct {
+	Time Time_
+	Date Date_
+}
+
+type Time_ struct {
+	Hour   int
+	Minute int
+	Second int
+}
+
+type Date_ struct {
+	Year  int
+	Month int
+	Day   int
+}
+
 // NetworkCapabilities contains networking capabilities of ONVIF camera
 type NetworkCapabilities struct {
 	DynDNS     bool

@@ -407,3 +407,130 @@ func (device *Device) SetSystemDateAndTime(useNTP bool, t time.Time) error {
 	}
 	return nil
 }
+
+func (device *Device) GetSystemDateAndTime() (SystemDateAndTime, error) {
+	// Create SOAP
+	soap := SOAP{
+		Body:     "<tds:GetSystemDateAndTime/>",
+		XMLNs:    deviceXMLNs,
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	// Send SOAP request
+	response, err := soap.SendRequest(device.XAddr)
+	if err != nil {
+		return SystemDateAndTime{}, err
+	}
+
+	// Parse response to interface
+	systemDateAndTimeInfo, err := response.ValueForPath("Envelope.Body.GetSystemDateAndTimeResponse")
+	if err != nil {
+		return SystemDateAndTime{}, err
+	}
+
+	// Parse interface to struct
+	result := SystemDateAndTime{}
+	if mapResult, ok := systemDateAndTimeInfo.(map[string]interface{}); ok {
+		if mapInfo, ok := mapResult["SystemDateAndTime"].(map[string]interface{}); ok {
+			result.DateTimeType = interfaceToString(mapInfo["DateTimeType"])
+			result.DaylightSavings = interfaceToBool(mapInfo["DaylightSavings"])
+
+			timeZone := TimeZone_{}
+			if mapParam, ok := mapInfo["TimeZone"].(map[string]interface{}); ok {
+				timeZone.TZ = interfaceToString(mapParam["TZ"])
+			}
+			result.TimeZone = timeZone
+
+			dateTime := DateTime{}
+			if mapParam, ok := mapInfo["UTCDateTime"].(map[string]interface{}); ok {
+				t := Time_{}
+				if mapTime, ok := mapParam["Time"].(map[string]interface{}); ok {
+					t.Hour = interfaceToInt(mapTime["Hour"])
+					t.Minute = interfaceToInt(mapTime["Minute"])
+					t.Second = interfaceToInt(mapTime["Second"])
+				}
+				dateTime.Time = t
+
+				d := Date_{}
+				if mapDate, ok := mapParam["Date"].(map[string]interface{}); ok {
+					d.Year = interfaceToInt(mapDate["Year"])
+					d.Month = interfaceToInt(mapDate["Month"])
+					d.Day = interfaceToInt(mapDate["Day"])
+				}
+				dateTime.Date = d
+			}
+			result.UTCDateTime = dateTime
+
+			dateTime = DateTime{}
+			if mapParam, ok := mapInfo["LocalDateTime"].(map[string]interface{}); ok {
+				t := Time_{}
+				if mapTime, ok := mapParam["Time"].(map[string]interface{}); ok {
+					t.Hour = interfaceToInt(mapTime["Hour"])
+					t.Minute = interfaceToInt(mapTime["Minute"])
+					t.Second = interfaceToInt(mapTime["Second"])
+				}
+				dateTime.Time = t
+				d := Date_{}
+				if mapDate, ok := mapParam["Date"].(map[string]interface{}); ok {
+					d.Year = interfaceToInt(mapDate["Year"])
+					d.Month = interfaceToInt(mapDate["Month"])
+					d.Day = interfaceToInt(mapDate["Day"])
+				}
+				dateTime.Date = d
+			}
+			result.LocalDateTime = dateTime
+		}
+	}
+
+	return result, nil
+}
+
+func (device *Device) GetNTP() (NTPInformation, error) {
+	// Create SOAP
+	soap := SOAP{
+		Body:     "<tds:GetNTP/>",
+		XMLNs:    deviceXMLNs,
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	// Send SOAP request
+	response, err := soap.SendRequest(device.XAddr)
+	if err != nil {
+		return NTPInformation{}, err
+	}
+
+	// Parse response to interface
+	ntpInformation, err := response.ValueForPath("Envelope.Body.GetNTPResponse")
+	if err != nil {
+		return NTPInformation{}, err
+	}
+
+	// Parse interface to struct
+	result := NTPInformation{}
+	if mapResult, ok := ntpInformation.(map[string]interface{}); ok {
+		if mapInfo, ok := mapResult["NTPInformation"].(map[string]interface{}); ok {
+			result.FromDHCP = interfaceToBool(mapInfo["FromDHCP"])
+
+			ntp := NetworkHost{}
+			if result.FromDHCP {
+				if mapParam, ok := mapInfo["NTPFromDHCP"].(map[string]interface{}); ok {
+					ntp.Type = interfaceToString(mapParam["Type"])
+					ntp.IPv4Address = interfaceToString(mapParam["IPv4Address"])
+					ntp.DNSname = interfaceToString(mapParam["DNSname"])
+				}
+				result.NTPFromDHCP = ntp
+			} else {
+				if mapParam, ok := mapInfo["NTPManual"].(map[string]interface{}); ok {
+					ntp.Type = interfaceToString(mapParam["Type"])
+					ntp.IPv4Address = interfaceToString(mapParam["IPv4Address"])
+					ntp.DNSname = interfaceToString(mapParam["DNSname"])
+				}
+				result.NTPManual = ntp
+			}
+		}
+	}
+
+	return result, nil
+}
