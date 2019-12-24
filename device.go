@@ -364,6 +364,31 @@ func (device *Device) SetHostname(name string) error {
 	return nil
 }
 
+func (device *Device) SetNetworkInterfaces() error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs:    []string{`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`, `xmlns:xsd="http://www.w3.org/2001/XMLSchema"`},
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	soap.Body = `<SetNetworkInterfaces xmlns="http://www.onvif.org/ver10/device/wsdl">
+      <InterfaceToken>eth0</InterfaceToken>
+      <NetworkInterface>
+        <Enabled xmlns="http://www.onvif.org/ver10/schema">true</Enabled>
+        <MTU xmlns="http://www.onvif.org/ver10/schema">1280</MTU>
+      </NetworkInterface>
+     </SetNetworkInterfaces>`
+
+	// Send SOAP request
+	_, err := soap.SendRequest(device.XAddr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (device *Device) SetSystemDateAndTime(useNTP bool, t time.Time) error {
 	var soap SOAP
 	// Create SOAP
