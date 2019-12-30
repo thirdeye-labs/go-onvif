@@ -83,3 +83,36 @@ func (device *Device) GetImagingSettings(videoSourceToken string) (ImagingSettin
 	return imagingSettings, err
 
 }
+
+func (device *Device) SetImagingSettings(exposureTime string) error {
+	var soap SOAP
+	// Create SOAP
+	soap = SOAP{
+		XMLNs:    []string{`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`, `xmlns:xsd="http://www.w3.org/2001/XMLSchema"`},
+		User:     device.User,
+		Password: device.Password,
+	}
+
+	soap.Body = `<SetImagingSettings xmlns="http://www.onvif.org/ver20/imaging/wsdl">
+	<VideoSourceToken>VideoSource_1</VideoSourceToken>
+    <Exposure>
+    <Mode>AUTO</Mode>
+    <MinExposureTime>10</MinExposureTime>
+    <MaxExposureTime>` + exposureTime + `</MaxExposureTime>
+	</Exposure>
+	<WideDynamicRange>
+	<Mode>ON</Mode>
+	<Level>50</Level>
+	</WideDynamicRange>
+	</SetImagingSettings>`
+
+	fmt.Println(soap.Body)
+
+	// Send SOAP request
+	rsp, err := soap.SendRequest(device.XAddr)
+	fmt.Println(rsp)
+	if err != nil {
+		return err
+	}
+	return nil
+}
