@@ -182,16 +182,9 @@ func (device *Device) GetSnapshotURI(profileToken string) (MediaURI, error) {
 	// Create SOAP
 	soap := SOAP{
 		XMLNs: mediaXMLNs,
-		Body: `<?xml version="1.0" encoding="utf-8"?>
-			<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"
-			xmlns:trt="http://www.onvif.org/ver10/media/wsdl"
-			xmlns:tt="http://www.onvif.org/ver10/schema">
-				<soap:Body>
-					<trt:GetSnapshotUri >     
+		Body: `<trt:GetSnapshotUri>     
 						<trt:ProfileToken>` + profileToken + `</trt:ProfileToken>
-					</trt:GetSnapshotUri>
-				</soap:Body>
-			</soap:Envelope>`,
+					</trt:GetSnapshotUri>`,
 		User:     device.User,
 		Password: device.Password,
 	}

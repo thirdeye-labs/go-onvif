@@ -157,7 +157,7 @@ func (soap SOAP) createRequest() string {
 func (soap SOAP) createUserToken() string {
 	//nonce := uuid.NewV4().Bytes()
 
-	id := uuid.NewV4()
+	id := uuid.Must(uuid.NewV4())
 
 	nonce := id.Bytes()
 
@@ -224,8 +224,13 @@ func (soap *SOAP) handle401(res *http.Response) (err error) {
 
 			if nonce != "" {
 				var response string
+				var id uuid.UUID
 
-				id := uuid.NewV4()
+				id, err = uuid.NewV4()
+				if err != nil {
+					return
+				}
+
 				cnonce := md5hash(string(id.Bytes()))
 				fmt.Println("cnonce:", cnonce)
 

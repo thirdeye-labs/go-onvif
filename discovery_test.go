@@ -57,7 +57,7 @@ func TestDiscoveryUnionCamQ5CamKeeper(t *testing.T) {
 		return
 	}
 
-	if dev.XAddr != "http://10.0.101.213:8090/onvif/device_service" {
+	if dev[0].XAddr != "http://10.0.101.213:8090/onvif/device_service" {
 		fmt.Println("XAddr does not match")
 		t.FailNow()
 	}
