@@ -58,7 +58,7 @@
   - [ ] getAudioEncoderConfigurations
   - [ ] getCompatibleAudioEncoderConfigurations
   - [ ] getAudioEncoderConfigurationOptions
-  - [ ] getSnapshotUri
+  - [X] getSnapshotUri
 - [ ] OnvifServicePtz
   - [ ] getNodes
   - [ ] getNode
