@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	logrus_syslog "github.com/sirupsen/logrus/hooks/syslog"
-	"log/syslog"
+//	logrus_syslog "github.com/sirupsen/logrus/hooks/syslog"
+//	"log/syslog"
 )
 
 type Level uint8
@@ -41,11 +41,11 @@ func init() {
 	// flag.Parse() before logging anything.
 	flag.Var(levelFlag{}, "log.level", "Only log messages with the given severity or above. Valid levels: [debug, info, warn, error, fatal, panic].")
 
-	hook, err := logrus_syslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
+/*	hook, err := logrus_syslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
 
 	if err == nil {
 		logger.Hooks.Add(hook)
-	}
+	} */
 }
 
 // fileLineEntry returns a logrus.Entry with file and line annotations for the

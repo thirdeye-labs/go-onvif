@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	. "github.com/jt6562/go-onvif"
+	. "github.com/fbatogo/go-onvif"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	var addrs []net.Addr
 
 	for _, iface := range ifaces {
-		if iface.Name == "en0" || iface.Name == "wlp58s0" || iface.Name == "wlan0" || iface.Name == "wlan1" {
+		if iface.Name == "en0" || iface.Name == "wlp58s0" || iface.Name == "wlan0" || iface.Name == "wlan1" || iface.Name == "br0" || iface.Name == "enp8s0" {
 			ifaceAddrs, err := iface.Addrs()
 
 			if err != nil {
@@ -78,6 +78,7 @@ func main() {
 				fmt.Println(d[i].GetStreamURI(p.Token, "UDP"))
 				fmt.Println(d[i].GetStreamURI(p.Token, "RTSP"))
 				fmt.Println(d[i].GetStreamURI(p.Token, "HTTP"))
+				fmt.Println(d[i].GetSnapshotURI(p.Token))
 			}
 		}
 	}
