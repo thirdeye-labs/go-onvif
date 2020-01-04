@@ -1,6 +1,6 @@
 # Go-ONVIF
 
-Go-ONVIF is a Go package for communicating with network camera which supports the [ONVIF](http://www.onvif.org/) specifications. ONVIF (Open Network Video Interface) is an open industry forum promoting and developing global standards for interfaces of IP-based physical security products such as network cameras. Recently, almost all network cameras support ONVIF specifications, especially network camera that made in China, which usually can bought with cheap price.
+Go-ONVIF is a Go package for communicating with network camera which supports the [ONVIF](http://www.onvif.org/) specifications. ONVIF (Open Network Video Interface) is an open industry forum promoting and developing global standards for interfaces of IP-based physical security products such as network cameras. Recently, almost all network cameras support ONVIF specifications, especially network cameras made in China, which can usually be purchased inexpensively.
 
 ## Progress
 
