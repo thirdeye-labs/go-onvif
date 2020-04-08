@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
-	. "github.com/fbatogo/go-onvif"
+	. "github.com/thirdeye-labs/go-onvif"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 	var addrs []net.Addr
 
 	for _, iface := range ifaces {
-		if iface.Name == "en0" || iface.Name == "wlp58s0" || iface.Name == "wlan0" || iface.Name == "wlan1" || iface.Name == "br0" || iface.Name == "enp8s0" {
+		if strings.Contains(iface.Name, "en") || strings.Contains(iface.Name, "wlp") || strings.Contains(iface.Name, "wlan") || strings.Contains(iface.Name, "br0") || strings.Contains(iface.Name, "enx") {
 			ifaceAddrs, err := iface.Addrs()
 
 			if err != nil {

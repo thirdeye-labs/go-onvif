@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/clbanning/mxj"
-	uuid "github.com/satori/go.uuid"
+	uuid "github.com/gofrs/uuid"
 )
 
 var httpClient = &http.Client{Timeout: time.Second * 5}

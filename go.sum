@@ -4,6 +4,7 @@ github.com/clbanning/mxj v1.8.2 h1:KBWvavOh0B3laROMyum5QODKHVA8RkTZGyO1SrgJkRI=
 github.com/clbanning/mxj v1.8.2/go.mod h1:BVjHeAH+rl9rs6f+QIpeRl0tfu10SXn1pUSa5PVGJng=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/gofrs/uuid v1.2.0/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/gofrs/uuid v3.1.0+incompatible h1:q2rtkjaKT4YEr6E1kamy0Ha4RtepWlQBedyHx0uzKwA=
 github.com/gofrs/uuid v3.1.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/jt6562/go-onvif v0.0.0-20190531141013-6b34ecee3096 h1:zSrWj/6gSUXF5vrBcZi8V/SOyJVKNH484Ce0gsYR+88=
