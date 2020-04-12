@@ -42,7 +42,6 @@ func StartDiscoveryWithContext(ctx context.Context, addrs []net.Addr, duration t
 	for _, addr := range addrs {
 		ipAddr, ok := addr.(*net.IPNet)
 		if ok && !ipAddr.IP.IsLoopback() && ipAddr.IP.To4() != nil {
-
 			eg.Go(func() error {
 				devices, err := discoverDevices(ipAddr, duration)
 				if err != nil {
@@ -147,7 +146,7 @@ func discoverDevices(ipAddr *net.IPNet, duration time.Duration) ([]*Device, erro
 	for {
 		// Create buffer and receive UDP response
 		buffer := make([]byte, 16*1024)
-		_, _, err = conn.ReadFromUDP(buffer)
+		_, udpAddr, err := conn.ReadFromUDP(buffer)
 
 		// Check if connection timeout
 		if err != nil {
@@ -159,7 +158,6 @@ func discoverDevices(ipAddr *net.IPNet, duration time.Duration) ([]*Device, erro
 		}
 
 		log.Debugf("Camera replied. Data: %s", string(buffer))
-
 		// Read and parse WS-Discovery response
 		devices, err := readDiscoveryResponse(messageID, buffer)
 		if err != nil && err != errWrongDiscoveryResponse {
@@ -177,6 +175,7 @@ func discoverDevices(ipAddr *net.IPNet, duration time.Duration) ([]*Device, erro
 			// log.Debug(ipAddr.IP.String(), ipAddr.Mask.String(), "contains", parsed.Hostname(), " = ", ipAddr.Contains(ipA))
 
 			if ipAddr.Contains(ipA) {
+				device.IPAddress = udpAddr.IP.String()
 				discoveryResults = append(discoveryResults, device)
 			}
 		}

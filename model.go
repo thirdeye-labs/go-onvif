@@ -8,6 +8,7 @@ type Device struct {
 	XAddr    string
 	User     string
 	Password string
+	IPAddress     string
 	Services map[string]Service
 }
 
